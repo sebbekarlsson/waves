@@ -124,6 +124,5 @@ float *wav_read(const char *path, uint32_t *length, WavHeader *header) {
   }
 
   printf("Wav error.\n");
-  exit(1);
   return 0;
 }
