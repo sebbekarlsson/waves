@@ -85,7 +85,7 @@ int wav_read(Wave* wave, const char *path) {
   printf("(Waves) => data_size: %d\n", h->data_size);
 
   wave->data = (char*)calloc(wave->length, sizeof(char));
-  fread(wave->data, sizeof(float), wave->length, fp);
+  fread(wave->data, sizeof(char), wave->length, fp);
 
   fclose(fp);
 

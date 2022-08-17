@@ -5,7 +5,7 @@ int main(int argc, char *argv[]) {
 
   Wave wave = {0};
 
-  if (!wav_read(&wave, "clap.wav")) {
+  if (!wav_read(&wave, "test.wav")) {
     printf("Error reading wav file.\n");
     return 1;
   }
