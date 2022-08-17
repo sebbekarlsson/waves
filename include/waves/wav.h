@@ -1,6 +1,7 @@
 #ifndef WAVES_WAV_H
 #define WAVES_WAV_H
 #include <stdint.h>
+#include <stdbool.h>
 
 typedef struct WAV_HEADER {
   uint8_t riff[4];
@@ -18,17 +19,16 @@ typedef struct WAV_HEADER {
   uint32_t data_size;
 } WavHeader;
 
+
 typedef struct {
-  unsigned char *data;
-  uint32_t size;
-  uint32_t size_b;
-  uint32_t seek_p;
-} IOFile;
+  WavHeader header;
+  int64_t length;
+  float duration;
+  char* data;
+} Wave;
 
-int wav_write(const char *path, float *data, uint32_t size, float sample_freq,
-              uint16_t bits_per_sample, uint16_t nr_channels,
-              uint16_t format_type);
+int wav_write(Wave wave, const char* path);
 
-float *wav_read(const char *path, uint32_t *length, WavHeader *header);
+int wav_read(Wave* wave, const char *path);
 
 #endif
