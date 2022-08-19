@@ -24,7 +24,7 @@ typedef struct {
   WavHeader header;
   int64_t length;
   float duration;
-  char* data;
+  void* data;
 } Wave;
 
 int wav_write(Wave wave, const char* path);
