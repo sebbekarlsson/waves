@@ -4,8 +4,15 @@
 int main(int argc, char *argv[]) {
 
   Wave wave = {0};
+  WaveOptions options = {0};
+  options.convert_to_float = true;
 
-  if (!wav_read(&wave, "../assets/flute.wav")) {
+  if (argc < 2) {
+    fprintf(stderr, "Please specify input file.\n");
+    return 1;
+  }
+
+  if (!wav_read(&wave, argv[1], options)) {
     printf("Error reading wav file.\n");
     return 1;
   }

@@ -27,8 +27,13 @@ typedef struct {
   void* data;
 } Wave;
 
+
+typedef struct {
+  bool convert_to_float;
+} WaveOptions;
+
 int wav_write(Wave wave, const char* path);
 
-int wav_read(Wave* wave, const char *path);
+int wav_read(Wave* wave, const char *path, WaveOptions options);
 
 #endif

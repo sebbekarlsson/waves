@@ -14,6 +14,9 @@ int wav_write(Wave wave, const char *path) {
     return 0;
   }
 
+  const char* data_tag = "data";
+  memcpy(&wave.header.data_chunk_header, data_tag, 4*sizeof(uint8_t));
+
   printf("Writing file: %s\n", path);
 
   fwrite(&wave.header, sizeof(header), 1, out);
@@ -21,7 +24,7 @@ int wav_write(Wave wave, const char *path) {
   fseek(out, 0, SEEK_END);
 
   int64_t byte_size =
-      wave.header.format_type == 3 ? sizeof(float) : sizeof(&wave.data[0]);
+      wave.header.format_type == 3 ? sizeof(float) : sizeof(unsigned char);//sizeof(&wave.data[0]);
 
   fwrite(wave.data, byte_size, wave.length, out);
 
@@ -106,7 +109,7 @@ int wav_convert(Wave *wave) {
   return 1;
 }
 
-int wav_read(Wave *wave, const char *path) {
+int wav_read(Wave *wave, const char *path, WaveOptions options) {
 
   if (access(path, F_OK) != 0) {
   failed_to_read:
@@ -145,6 +148,14 @@ int wav_read(Wave *wave, const char *path) {
   fread(&h->data_chunk_header[0], sizeof(uint8_t), 4, fp);
   fread(&h->data_size, sizeof(uint32_t), 1, fp);
 
+
+  if (memcmp(h->data_chunk_header, "LIST", 4) == 0) {
+    fseek(fp, h->data_size, SEEK_CUR);
+    fread(&h->data_size, sizeof(uint32_t), 1, fp);
+  }
+
+
+
   //  printf("%ld\n", sizeof(uint32_t));
 
   wave->duration =
@@ -164,10 +175,12 @@ int wav_read(Wave *wave, const char *path) {
 
   fclose(fp);
 
-  if (h->format_type == 1 && h->bits_per_sample == 16) {
-    printf("Attempting to convert wav to float.\n");
-    if (!wav_convert(wave)) {
-      fprintf(stderr, "Failed to convert wav.\n");
+  if (options.convert_to_float) {
+    if (h->format_type == 1 && h->bits_per_sample == 16) {
+      printf("Attempting to convert wav to float.\n");
+      if (!wav_convert(wave)) {
+        fprintf(stderr, "Failed to convert wav.\n");
+      }
     }
   }
 
