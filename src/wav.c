@@ -162,6 +162,7 @@ int wav_read(Wave *wave, const char *path, WaveOptions options) {
       (float)h->data_size / ((float)h->sample_rate * (float)h->channels * ((float)h->bits_per_sample / 8.0f));
   wave->length = h->data_size;
 
+  /*
   printf("(Waves) => format: %d\n", h->format_type);
   printf("(Waves) => channels: %d\n", h->channels);
   printf("(Waves) => sample_rate: %d\n", h->sample_rate);
@@ -169,7 +170,7 @@ int wav_read(Wave *wave, const char *path, WaveOptions options) {
   printf("(Waves) => block_align: %d\n", h->block_align);
   printf("(Waves) => bits_per_sample: %d\n", h->bits_per_sample);
   printf("(Waves) => data_size: %d\n", h->data_size);
-  printf("(Waves) => duration: %12.6f\n", wave->duration);
+  printf("(Waves) => duration: %12.6f\n", wave->duration);*/
 
   wave->data = (char *)calloc(wave->length, sizeof(char));
   fread(wave->data, sizeof(char), wave->length, fp);
