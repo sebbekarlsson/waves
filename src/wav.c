@@ -187,3 +187,26 @@ int wav_read(Wave *wave, const char *path, WaveOptions options) {
 
   return 1;
 }
+
+int wav_destroy(Wave* wave) {
+  if (!wave) return 0;
+  if (wave->data) {
+    free(wave->data);
+    wave->data = 0;
+  }
+
+  wave->length = 0;
+  wave->duration = 0;
+  wave->data = 0;
+  wave->header.overall_size = 0;
+  wave->header.data_size = 0;
+  wave->header.sample_rate = 0;
+  wave->header.length_of_fmt = 0;
+  wave->header.bits_per_sample = 0;
+  wave->header.block_align = 0;
+  wave->header.byterate = 0;
+  wave->header.channels = 0;
+  wave->header.length_of_fmt = 0;
+
+  return 1;
+}

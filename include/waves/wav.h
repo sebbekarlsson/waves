@@ -36,4 +36,6 @@ int wav_write(Wave wave, const char* path);
 
 int wav_read(Wave* wave, const char *path, WaveOptions options);
 
+int wav_destroy(Wave* wave);
+
 #endif
