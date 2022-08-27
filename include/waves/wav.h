@@ -23,7 +23,7 @@ typedef struct WAV_HEADER {
 typedef struct {
   WavHeader header;
   int64_t length;
-  float duration;
+  double duration;
   void* data;
 } Wave;
 

@@ -159,7 +159,7 @@ int wav_read(Wave *wave, const char *path, WaveOptions options) {
   //  printf("%ld\n", sizeof(uint32_t));
 
   wave->duration =
-      (float)h->data_size / ((float)h->sample_rate * (float)h->channels * ((float)h->bits_per_sample / 8.0f));
+      (double)h->data_size / ((double)h->sample_rate * (double)h->channels * ((double)h->bits_per_sample / 8.0f));
   wave->length = h->data_size;
 
   /*
