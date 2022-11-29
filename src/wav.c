@@ -149,28 +149,17 @@ int wav_read(Wave *wave, const char *path, WaveOptions options) {
   fread(&h->data_size, sizeof(uint32_t), 1, fp);
 
 
-  if (memcmp(h->data_chunk_header, "LIST", 4) == 0) {
+  uint32_t chunk_type = 0;
+   if (memcmp(h->data_chunk_header, "LIST", 4) == 0) {
+    fread(&chunk_type, sizeof(uint32_t), 1, fp);
     fseek(fp, h->data_size, SEEK_CUR);
     fread(&h->data_size, sizeof(uint32_t), 1, fp);
   }
 
 
-
-  //  printf("%ld\n", sizeof(uint32_t));
-
   wave->duration =
       (double)h->data_size / ((double)h->sample_rate * (double)h->channels * ((double)h->bits_per_sample / 8.0f));
   wave->length = h->data_size;
-
-  /*
-  printf("(Waves) => format: %d\n", h->format_type);
-  printf("(Waves) => channels: %d\n", h->channels);
-  printf("(Waves) => sample_rate: %d\n", h->sample_rate);
-  printf("(Waves) => byterate: %d\n", h->byterate);
-  printf("(Waves) => block_align: %d\n", h->block_align);
-  printf("(Waves) => bits_per_sample: %d\n", h->bits_per_sample);
-  printf("(Waves) => data_size: %d\n", h->data_size);
-  printf("(Waves) => duration: %12.6f\n", wave->duration);*/
 
   wave->data = (char *)calloc(wave->length, sizeof(char));
   fread(wave->data, sizeof(char), wave->length, fp);
