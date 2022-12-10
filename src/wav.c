@@ -17,7 +17,7 @@ int wav_write(Wave wave, const char *path) {
   const char* data_tag = "data";
   memcpy(&wave.header.data_chunk_header, data_tag, 4*sizeof(uint8_t));
 
-  printf("Writing file: %s\n", path);
+  //printf("Writing file: %s\n", path);
 
   fwrite(&wave.header, sizeof(header), 1, out);
 
@@ -30,7 +30,7 @@ int wav_write(Wave wave, const char *path) {
 
   fclose(out);
 
-  printf("Done, wrote file %s\n", path);
+  //printf("Done, wrote file %s\n", path);
 
   return 1;
 }
