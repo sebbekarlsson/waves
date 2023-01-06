@@ -4,20 +4,24 @@
 ## Usage
 
 ``` C
-
 #include <waves/wav.h>
 
-
 int main(int argc, char *argv[]) {
-
   Wave wave = {0};
+  WaveOptions options = {0};
+  options.convert_to_float = true; // will try to convert to float if it isn't float already
 
-  if (!wav_read(&wave, "clap.wav")) {
+  if (argc < 2) {
+    fprintf(stderr, "Please specify input file.\n");
+    return 1;
+  }
+
+  if (!wav_read(&wave, argv[1], options)) {
     printf("Error reading wav file.\n");
     return 1;
   }
 
-  if (!wav_write(wave, "out.wav")) {
+  if (!wav_write(wave, "out_float.wav")) {
     fprintf(stderr, "Error writing wav file.\n");
     return 1;
   }
