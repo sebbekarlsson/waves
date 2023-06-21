@@ -5,39 +5,7 @@
 #include <unistd.h>
 #include <waves/wav.h>
 
-int wav_write(Wave wave, const char *path) {
-  WavHeader header = {};
-
-  FILE *out = fopen(path, "wb");
-  if (out == NULL) {
-    printf("Could not write to %s\n", path);
-    return 0;
-  }
-
-  const char* data_tag = "data";
-  memcpy(&wave.header.data_chunk_header, data_tag, 4*sizeof(uint8_t));
-
-  //printf("Writing file: %s\n", path);
-
-  fwrite(&wave.header, sizeof(header), 1, out);
-
-  fseek(out, 0, SEEK_END);
-
-  int64_t byte_size =
-      wave.header.format_type == 3 ? sizeof(float) : sizeof(unsigned char);//sizeof(&wave.data[0]);
-
-  fwrite(wave.data, byte_size, wave.length, out);
-
-  fclose(out);
-
-  //printf("Done, wrote file %s\n", path);
-
-  return 1;
-}
-
-typedef int16_t OgType;
-
-static float convert_to_float(OgType i) {
+static float convert_to_float_from_16_bit(int16_t i) {
   float f = ((float)i) / (float)32768;
   if (f > 1)
     f = 1;
@@ -47,19 +15,28 @@ static float convert_to_float(OgType i) {
   return f;
 }
 
-float convert(const OgType *src) {
-  int i = src[2] << 24 | src[1] << 16 | src[0] << 8;
-  return (((float)i) / (float)(INT_MAX - 256));
+static float convert_to_float_from_24_bit(int32_t i) {
+  float f = ((float)i) / (float)8388608;
+  if (f > 1)
+    f = 1;
+  if (f < -1)
+    f = -1;
+
+  return f;
 }
 
-float convert2(const OgType *src) {
-  int i = ((src[2] << 24) | (src[1] << 16) | (src[0] << 8)) >> 8;
-  return (((float)i)) / 8388607.0;
-}
+int32_t read_24_bit_as_int32(uint8_t *data) {
+  int32_t result = 0;
 
-float convert3(const OgType *src) {
-  OgType v = *src;
-  return convert_to_float(v);
+  result |= data[0];
+  result |= data[1] << 8;
+  result |= data[2] << 16;
+
+  if (result & 0x00800000) {
+    result |= 0xFF000000;
+  }
+
+  return result;
 }
 
 int wav_convert(Wave *wave) {
@@ -80,31 +57,72 @@ int wav_convert(Wave *wave) {
 
   float *next_data = (float *)calloc(nr_samples, sizeof(float));
 
-  OgType *og_data = (OgType *)wave->data;
+  if (wave->header.bits_per_sample == 16) {
+    int16_t *og_data = (int16_t *)wave->data;
 
-  OgType *end = &og_data[nr_bytes];
-  OgType *ptr = &og_data[0];
-  float *fptr = &next_data[0];
-  float *fend = &next_data[nr_samples];
+    int16_t *end = &og_data[nr_bytes];
+    int16_t *ptr = &og_data[0];
+    float *fptr = &next_data[0];
+    float *fend = &next_data[nr_samples];
 
-  for (int64_t i = 0; i < nr_samples; i++) {
-    OgType *bytes = &og_data[i];
-    float v = convert3(bytes);
-    next_data[i] = v;
+    for (int64_t i = 0; i < nr_samples; i++) {
+      int16_t *bytes = &og_data[i];
+      float v = convert_to_float_from_16_bit(*bytes);
+      next_data[i] = v;
+    }
+  } else if (wave->header.bits_per_sample == 24) {
+    uint8_t *og_data = (uint8_t *)wave->data;
+
+    for (int64_t i = 0; i < nr_samples; i++) {
+      int32_t sample = read_24_bit_as_int32(&og_data[i * 3]);
+      float v = convert_to_float_from_24_bit(sample);
+      next_data[i] = v;
+    }
   }
 
   free(wave->data);
   wave->data = next_data;
 
   int64_t next_bits_per_sample = (sizeof(float) * 8);
-
   wave->header.format_type = 3;
   wave->header.byterate = wave->header.sample_rate * channels * sizeof(float);
   wave->header.bits_per_sample = next_bits_per_sample;
+  wave->header.length_of_fmt = 16;
+  wave->header.channels = channels;
+  wave->header.block_align =
+      (wave->header.bits_per_sample / 8) * wave->header.channels;
+  wave->header.byterate = wave->header.sample_rate * wave->header.block_align;
   wave->header.data_size = next_size;
-  wave->header.overall_size = sizeof(wave->header) + next_size;
-  wave->header.block_align = channels * next_bits_per_sample / 8;
+  wave->header.overall_size = 36 + wave->header.data_size;
+
   wave->length = next_size;
+
+  return 1;
+}
+
+int wav_write(Wave wave, const char *path) {
+  WavHeader header = {};
+
+  FILE *out = fopen(path, "wb");
+  if (out == NULL) {
+    printf("Could not write to %s\n", path);
+    return 0;
+  }
+
+  const char *data_tag = "data";
+  memcpy(&wave.header.data_chunk_header, data_tag, 4 * sizeof(uint8_t));
+
+  fwrite(&wave.header, sizeof(header), 1, out);
+
+  fseek(out, 0, SEEK_END);
+
+  int64_t byte_size = wave.header.format_type == 3        ? sizeof(float)
+                      : wave.header.bits_per_sample == 16 ? sizeof(int16_t)
+                                                          : sizeof(int32_t);
+
+  fwrite(wave.data, byte_size, wave.length, out);
+
+  fclose(out);
 
   return 1;
 }
@@ -129,8 +147,13 @@ int wav_read(Wave *wave, const char *path, WaveOptions options) {
   fread(&h->overall_size, sizeof(uint32_t), 1, fp);
   fread(h->wave, sizeof(uint8_t), 4, fp);
 
+  fread(h->fmt_chunk_marker, sizeof(uint8_t), 4, fp);
+
   // skip junk if any
   while (memcmp(h->fmt_chunk_marker, "fmt ", 4) != 0) {
+    // skip size of chunk
+    fread(&h->length_of_fmt, sizeof(uint32_t), 1, fp);
+    fseek(fp, h->length_of_fmt, SEEK_CUR);
     if ((fread(h->fmt_chunk_marker, sizeof(uint8_t), 4, fp)) == EOF) {
       printf("Error reading wav file.\n");
       fclose(fp);
@@ -138,27 +161,39 @@ int wav_read(Wave *wave, const char *path, WaveOptions options) {
     }
   }
 
+  // read 'fmt ' chunk size
   fread(&h->length_of_fmt, sizeof(uint32_t), 1, fp);
+  // read 'fmt ' chunk
   fread(&h->format_type, sizeof(uint16_t), 1, fp);
   fread(&h->channels, sizeof(uint16_t), 1, fp);
   fread(&h->sample_rate, sizeof(uint32_t), 1, fp);
   fread(&h->byterate, sizeof(uint32_t), 1, fp);
   fread(&h->block_align, sizeof(uint16_t), 1, fp);
   fread(&h->bits_per_sample, sizeof(uint16_t), 1, fp);
-  fread(&h->data_chunk_header[0], sizeof(uint8_t), 4, fp);
-  fread(&h->data_size, sizeof(uint32_t), 1, fp);
 
-
-  uint32_t chunk_type = 0;
-   if (memcmp(h->data_chunk_header, "LIST", 4) == 0) {
-    fread(&chunk_type, sizeof(uint32_t), 1, fp);
-    fseek(fp, h->data_size, SEEK_CUR);
-    fread(&h->data_size, sizeof(uint32_t), 1, fp);
+  // if 'fmt ' chunk has extra params, skip them
+  if (h->length_of_fmt > 16) {
+    fseek(fp, h->length_of_fmt - 16, SEEK_CUR);
   }
 
+  // find 'data' chunk
+  fread(h->data_chunk_header, sizeof(uint8_t), 4, fp);
+  while (memcmp(h->data_chunk_header, "data", 4) != 0) {
+    fread(&h->data_size, sizeof(uint32_t), 1, fp);
+    fseek(fp, h->data_size, SEEK_CUR);
+    if ((fread(h->data_chunk_header, sizeof(uint8_t), 4, fp)) == EOF) {
+      printf("Error reading wav file.\n");
+      fclose(fp);
+      return 0;
+    }
+  }
+
+  // read 'data' chunk size
+  fread(&h->data_size, sizeof(uint32_t), 1, fp);
 
   wave->duration =
-      (double)h->data_size / ((double)h->sample_rate * (double)h->channels * ((double)h->bits_per_sample / 8.0f));
+      (double)h->data_size / ((double)h->sample_rate * (double)h->channels *
+                              ((double)h->bits_per_sample / 8.0f));
   wave->length = h->data_size;
 
   wave->data = (char *)calloc(wave->length, sizeof(char));
@@ -167,7 +202,8 @@ int wav_read(Wave *wave, const char *path, WaveOptions options) {
   fclose(fp);
 
   if (options.convert_to_float) {
-    if (h->format_type == 1 && h->bits_per_sample == 16) {
+    if (h->format_type == 1 &&
+        (h->bits_per_sample == 16 || h->bits_per_sample == 24)) {
       printf("Attempting to convert wav to float.\n");
       if (!wav_convert(wave)) {
         fprintf(stderr, "Failed to convert wav.\n");
@@ -178,8 +214,9 @@ int wav_read(Wave *wave, const char *path, WaveOptions options) {
   return 1;
 }
 
-int wav_destroy(Wave* wave) {
-  if (!wave) return 0;
+int wav_destroy(Wave *wave) {
+  if (!wave)
+    return 0;
   if (wave->data) {
     free(wave->data);
     wave->data = 0;
