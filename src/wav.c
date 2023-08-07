@@ -51,9 +51,9 @@ int wav_convert(Wave *wave) {
 
   int64_t next_size = nr_samples * sizeof(float);
 
-  printf("nr samples: %ld\n", nr_samples);
-  printf("Original bytes: %ld\n", nr_bytes);
-  printf("Next bytes: %ld\n", next_size);
+  //printf("nr samples: %ld\n", nr_samples);
+  //printf("Original bytes: %ld\n", nr_bytes);
+  //printf("Next bytes: %ld\n", next_size);
 
   float *next_data = (float *)calloc(nr_samples, sizeof(float));
 
@@ -204,7 +204,7 @@ int wav_read(Wave *wave, const char *path, WaveOptions options) {
   if (options.convert_to_float) {
     if (h->format_type == 1 &&
         (h->bits_per_sample == 16 || h->bits_per_sample == 24)) {
-      printf("Attempting to convert wav to float.\n");
+      //printf("Attempting to convert wav to float.\n");
       if (!wav_convert(wave)) {
         fprintf(stderr, "Failed to convert wav.\n");
       }
