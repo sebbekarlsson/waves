@@ -96,6 +96,7 @@ int wav_convert(Wave *wave) {
   wave->header.overall_size = 36 + wave->header.data_size;
 
   wave->length = next_size;
+  wave->num_samples = nr_samples;
 
   return 1;
 }
