@@ -199,15 +199,10 @@ int wav_read(Wave *wave, const char *path, WaveOptions options) {
 
   wave->data = (char *)calloc(wave->length, sizeof(char));
   fread(wave->data, sizeof(char), wave->length, fp);
-
-  int64_t channels = wave->header.channels;
-  int64_t nr_bytes = wave->length;
-  int64_t nr_bits = nr_bytes * 8;
-  int64_t bits_per_sample = wave->header.bits_per_sample;
-  int64_t nr_samples = nr_bits / bits_per_sample;
-  wave->num_samples = nr_samples;
-
+  
   fclose(fp);
+
+  wave->num_samples = wave->header.bits_per_sample <= 0 ? 0 : ((wave->length * 8) / wave->header.bits_per_sample);
 
   if (options.convert_to_float) {
     if (h->format_type == 1 &&
