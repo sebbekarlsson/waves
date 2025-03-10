@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 3.20)
 
 project(waves)
 
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/assets)
-file(COPY ${CMAKE_SOURCE_DIR}/assets DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+# file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/assets)
+# file(COPY ${CMAKE_SOURCE_DIR}/assets DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
