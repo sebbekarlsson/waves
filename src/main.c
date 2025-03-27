@@ -17,10 +17,12 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
+
   if (!wav_write(wave, "out_float.wav")) {
     fprintf(stderr, "Error writing wav file.\n");
     return 1;
   }
+  wav_print(&wave, stdout);
 
   return 0;
 }

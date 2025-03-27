@@ -121,7 +121,7 @@ int wav_write(Wave wave, const char *path) {
                       : wave.header.bits_per_sample == 16 ? sizeof(int16_t)
                                                           : sizeof(int32_t);
 
-  fwrite(wave.data, byte_size, wave.length, out);
+  fwrite(wave.data, byte_size, wave.length / byte_size, out);
 
   fclose(out);
 
@@ -205,7 +205,7 @@ int wav_read(Wave *wave, const char *path, WaveOptions options) {
   wave->num_samples = wave->header.bits_per_sample <= 0 ? 0 : ((wave->length * 8) / wave->header.bits_per_sample);
 
   if (options.convert_to_float) {
-    if (h->format_type == 1 &&
+    if ((h->format_type == 1 || h->format_type == 65534) &&
         (h->bits_per_sample == 16 || h->bits_per_sample == 24)) {
       //printf("Attempting to convert wav to float.\n");
       if (!wav_convert(wave)) {
@@ -239,4 +239,19 @@ int wav_destroy(Wave *wave) {
   wave->header.length_of_fmt = 0;
 
   return 1;
+}
+
+void wav_print(Wave* wave, FILE* fp) {
+  if (wave == 0 || fp == 0) return;
+  fprintf(fp, "duration: %9.11f\n", wave->duration);
+  fprintf(fp, "length_of_fmt: %d\n", wave->header.length_of_fmt);
+  fprintf(fp, "length: %ld\n", wave->length);
+  fprintf(fp, "data_size: %d\n", wave->header.data_size);
+  fprintf(fp, "num_samples: %ld\n", wave->num_samples);
+  fprintf(fp, "sample_rate: %d\n", wave->header.sample_rate);
+  fprintf(fp, "channels: %d\n", wave->header.channels);
+  fprintf(fp, "bits_per_sample: %d\n", wave->header.bits_per_sample);
+  fprintf(fp, "byterate: %d\n", wave->header.byterate);
+  fprintf(fp, "block_align: %d\n", wave->header.block_align);
+  fprintf(fp, "format_type: %d\n", wave->header.format_type);
 }

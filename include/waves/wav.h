@@ -2,6 +2,7 @@
 #define WAVES_WAV_H
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdio.h>
 
 typedef struct WAV_HEADER {
   uint8_t riff[4];
@@ -38,5 +39,7 @@ int wav_write(Wave wave, const char* path);
 int wav_read(Wave* wave, const char *path, WaveOptions options);
 
 int wav_destroy(Wave* wave);
+
+void wav_print(Wave* wave, FILE* fp);
 
 #endif
